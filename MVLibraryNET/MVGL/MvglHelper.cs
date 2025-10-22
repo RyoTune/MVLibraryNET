@@ -56,7 +56,7 @@ public static class MvglHelper
                 ref var dataItem = ref dataEntries[treeItem.DataId];
                 files[filesIdx] = new()
                 {
-                    FileName = nameEntries[i].ToString(),
+                    FileName = nameEntries[i].ToString().Replace('\\', '/'),
                     FileOffset = (long)(dataItem.Offset + header.DataStart),
                     FileSize = (int)dataItem.CompressedSize,
                     ExtractSize = (int)dataItem.FullSize,
