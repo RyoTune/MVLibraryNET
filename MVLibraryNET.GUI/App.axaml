@@ -3,7 +3,9 @@
     x:Class="MVLibraryNET.GUI.App"
     xmlns="https://github.com/avaloniaui"
     xmlns:local="using:MVLibraryNET.GUI"
+    xmlns:themes="clr-namespace:ShadUI;assembly=ShadUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
 
     <Application.DataTemplates>
@@ -12,5 +14,6 @@
 
     <Application.Styles>
         <FluentTheme />
+        <themes:ShadTheme />
     </Application.Styles>
 </Application>

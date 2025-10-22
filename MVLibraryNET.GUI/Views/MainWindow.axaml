@@ -1,6 +1,6 @@
-<Window
+<shadui:Window
     Icon="/Assets/avalonia-logo.ico"
-    Title="MVLibraryNET.GUI"
+    Title="MVLibraryNET GUI"
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d"
@@ -9,6 +9,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
     xmlns:vm="using:MVLibraryNET.GUI.ViewModels"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -20,9 +21,12 @@
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <TextBlock
-        HorizontalAlignment="Center"
-        Text="{Binding Greeting}"
-        VerticalAlignment="Center" />
+    <DockPanel Margin="8" VerticalSpacing="8">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Classes="h2" Text="MVLibraryNET GUI" />
+            <TextBox Text="{Binding SearchText}" Watermark="Search..." />
+        </StackPanel>
+        <ListBox VerticalAlignment="Stretch" />
+    </DockPanel>
 
-</Window>
+</shadui:Window>

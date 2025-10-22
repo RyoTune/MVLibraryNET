@@ -1,6 +1,13 @@
-﻿namespace MVLibraryNET.GUI.ViewModels;
+﻿using ReactiveUI.SourceGenerators;
 
-public class MainWindowViewModel : ViewModelBase
+namespace MVLibraryNET.GUI.ViewModels;
+
+public partial class MainWindowViewModel : ViewModelBase
 {
-    public string Greeting { get; } = "Welcome to Avalonia!";
+    [Reactive] private string _searchText = string.Empty;
+
+    public MainWindowViewModel()
+    {
+        
+    }
 }
