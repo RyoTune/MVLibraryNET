@@ -1,8 +1,11 @@
 <shadui:Window
+    DragDrop.AllowDrop="True"
+    Height="480"
     Icon="/Assets/avalonia-logo.ico"
+    MinHeight="480"
+    MinWidth="854"
     Title="MVLibraryNET GUI"
-    d:DesignHeight="450"
-    d:DesignWidth="800"
+    Width="854"
     mc:Ignorable="d"
     x:Class="MVLibraryNET.GUI.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
@@ -24,9 +27,64 @@
     <DockPanel Margin="8" VerticalSpacing="8">
         <StackPanel DockPanel.Dock="Top">
             <TextBlock Classes="h2" Text="MVLibraryNET GUI" />
-            <TextBox Text="{Binding SearchText}" Watermark="Search..." />
+            <Viewbox Height="24" HorizontalAlignment="Left">
+                <TextBlock
+                    Classes="Lead"
+                    Text="{Binding Status.InputMvglFile}"
+                    TextTrimming="CharacterEllipsis" />
+            </Viewbox>
+            <TextBox
+                IsEnabled="{Binding FileItems.Count}"
+                Text="{Binding SearchText}"
+                Watermark="Search..." />
         </StackPanel>
-        <ListBox VerticalAlignment="Stretch" />
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Bottom">
+                <Grid ColumnDefinitions="auto * auto">
+                    <TextBlock Classes="Lead" Text="{Binding Message}" />
+                    <StackPanel
+                        Grid.Column="2"
+                        Orientation="Horizontal"
+                        Spacing="16">
+                        <TextBlock Classes="Lead" Text="{Binding Status.NumFiles, StringFormat='{}{0} Files'}" />
+                        <TextBlock Classes="Lead" Text="{Binding Status.TotalSizeMb, StringFormat='{}{0:F2} MBs'}" />
+                        <TextBlock Classes="Lead" Text="{Binding Status.LoadedMs, StringFormat='{}{0}ms'}" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock
+                    Classes="Caption"
+                    Text="RyoTune (GUI/C# MVGL Parser), SydMontague (OG MVGL Parser), Sewer56 (Related Code)"
+                    VerticalAlignment="Bottom" />
+            </StackPanel>
+            <ListBox
+                DockPanel.Dock="Top"
+                ItemsSource="{Binding SearchResults}"
+                Padding="8"
+                SelectionMode="Multiple">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.Styles>
+                <ListBox.ContextMenu>
+                    <ContextMenu DataContext="{Binding $parent[ListBox].((vm:MainWindowViewModel)DataContext)}">
+                        <MenuItem
+                            Command="{Binding ExtractFilesCommand}"
+                            CommandParameter="{Binding $parent[ListBox].SelectedItems}"
+                            Header="{Binding $parent[ListBox].SelectedItems.Count, StringFormat='Extract {0} File(s)', TargetNullValue=0}"
+                            IsEnabled="{Binding $parent[ListBox].SelectedItems.Count, FallbackValue=False}" />
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="auto * auto">
+                            <TextBlock Grid.Column="0" Text="{Binding FileName}" />
+                            <TextBlock Grid.Column="2" Text="{Binding TotalSizeMbs, StringFormat='{}{0:F2} MBs'}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
     </DockPanel>
 
 </shadui:Window>
