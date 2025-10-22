@@ -73,7 +73,7 @@ public partial class MainWindowViewModel : ViewModelBase, IActivatableViewModel
         }
         sw.Stop();
 
-        Message = $"Extracted {files.Count} file(s) in {sw.ElapsedMilliseconds}ms (({totalBytes / 1024 / 1024:F2}MBs)).";
+        Message = $"Extracted {files.Count} file(s) in {sw.ElapsedMilliseconds}ms ({totalBytes / 1024 / 1024:F2} MBs).";
     }
     
     public void LoadFile(string file)
