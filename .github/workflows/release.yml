@@ -39,7 +39,7 @@ jobs:
           }
 
       - name: Zip Build
-        run: Compress-Archive -Path build/* -DestinationPath $PROJECT_GUI_BUILD_WIN.zip
+        run: Compress-Archive -Path build/* -DestinationPath "$env:PROJECT_GUI_BUILD_WIN.zip"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -84,7 +84,7 @@ jobs:
       - name: Zip Build
         run: |
           cd build
-          tar -czvf ../$PROJECT_GUI_BUILD_LINUX.tar.gz .
+          tar -czvf "../${PROJECT_GUI_BUILD_LINUX}.tar.gz" .
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
