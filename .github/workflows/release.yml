@@ -32,10 +32,10 @@ jobs:
       - name: Build
         run: |
           if ($env:IS_RELEASE -eq 'true') {
-              dotnet publish $PROJECT_GUI -r win-x64 -c Release -o build /p:Version=$env:RELEASE_TAG
+              dotnet publish $env:PROJECT_GUI -r win-x64 -c Release -o build /p:Version=$env:RELEASE_TAG
           }
           else {
-              dotnet publish $PROJECT_GUI -r win-x64 -c Release -o build /p:Version=1.0.0
+              dotnet publish $env:PROJECT_GUI -r win-x64 -c Release -o build /p:Version=1.0.0
           }
 
       - name: Zip Build
