@@ -5,7 +5,7 @@ public struct MvglFile
     /// <summary>
     /// Full file name.
     /// </summary>
-    public string? FileName { get; init; }
+    public string FileName { get; init; }
 
     /// <summary>
     /// Offset of the file inside the MVGL.
