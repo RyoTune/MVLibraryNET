@@ -2,7 +2,7 @@
 using Avalonia.ReactiveUI;
 using System;
 
-namespace MVLibrary.GUI;
+namespace MVLibraryNET.GUI;
 
 sealed class Program
 {

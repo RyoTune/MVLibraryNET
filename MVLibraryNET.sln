@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVLibraryNET", "MVLibraryNE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVLibraryNET.CLI", "MVLibraryNET.CLI\MVLibraryNET.CLI.csproj", "{D2880B6E-8508-4C45-A3EA-58FA1D00B6F7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVLibrary.GUI", "MVLibrary.GUI\MVLibrary.GUI.csproj", "{EE16FC03-4228-4B0F-92CF-D2BDC901F42B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVLibraryNET.GUI", "MVLibraryNET.GUI\MVLibraryNET.GUI.csproj", "{EE16FC03-4228-4B0F-92CF-D2BDC901F42B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,4 +1,4 @@
-﻿namespace MVLibrary.GUI.ViewModels;
+﻿namespace MVLibraryNET.GUI.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase
 {

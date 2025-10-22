@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using MVLibrary.GUI.ViewModels;
-using MVLibrary.GUI.Views;
+using MVLibraryNET.GUI.ViewModels;
+using MVLibraryNET.GUI.Views;
 
-namespace MVLibrary.GUI;
+namespace MVLibraryNET.GUI;
 
 public partial class App : Application
 {
