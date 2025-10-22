@@ -1,0 +1,40 @@
+using MVLibraryNET.Utilities;
+
+namespace MVLibraryNET.MVGL;
+
+public class MvglReader(Stream stream, bool ownsStream) : IMvglReader
+{
+    private readonly long _initialStreamPosition = stream.Position;
+
+    public MvglFile[] GetFiles()
+    {
+        stream.Position = _initialStreamPosition;
+        return MvglHelper.GetFilesFromStream(stream);
+    }
+
+    public ArrayRental ExtractFile(in MvglFile file)
+    {
+        stream.Position = _initialStreamPosition;
+        return MvglHelper.ExtractFile(file, stream);
+    }
+    
+    public ArrayRental ExtractFileNoDecompression(in MvglFile file)
+    {
+        stream.Position = _initialStreamPosition;
+        return MvglHelper.ExtractFileNoDecompression(file, stream);
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        if (ownsStream)
+            stream.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        if (ownsStream)
+            await stream.DisposeAsync();
+    }
+}
