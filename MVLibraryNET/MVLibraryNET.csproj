@@ -5,6 +5,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RepositoryUrl>https://github.com/RyoTune/MVLibraryNET</RepositoryUrl>
+        <Authors>RyoTune</Authors>
+        <Description>.NET library for working with Media.Vision files.</Description>
+        <Copyright>MIT</Copyright>
     </PropertyGroup>
 
     <ItemGroup>

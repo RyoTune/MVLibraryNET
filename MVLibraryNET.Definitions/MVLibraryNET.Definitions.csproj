@@ -5,6 +5,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <Authors>RyoTune</Authors>
+        <Description>Type definitions for MVLibraryNET.</Description>
+        <RepositoryUrl>https://github.com/RyoTune/MVLibraryNET</RepositoryUrl>
     </PropertyGroup>
 
 </Project>
