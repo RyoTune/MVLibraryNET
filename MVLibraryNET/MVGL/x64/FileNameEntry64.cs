@@ -17,11 +17,11 @@ internal unsafe struct FileNameEntry64
         fixed (byte* extPtr = Extension)
         {
             var nameLen = new Span<byte>(namePtr, MaxNameLength).IndexOf((byte)'\0');
-            if (nameLen == -1) nameLen = MaxNameLength - 1;
+            if (nameLen == -1) nameLen = MaxNameLength; // Assumes ' ' isn't always used as some separator character.
             
             var name = Encoding.ASCII.GetString(namePtr, nameLen);
             var extLen = extPtr[3] == (byte)' ' ? 3 : 4;
-            var ext = Encoding.ASCII.GetString(extPtr, extLen).TrimEnd('\0', ' ');
+            var ext = Encoding.ASCII.GetString(extPtr, extLen);
             return $"{name}.{ext}";
         }
     }
