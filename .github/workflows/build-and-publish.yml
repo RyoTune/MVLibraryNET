@@ -65,18 +65,13 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Build Libraries
+      - name: Build NuGet Packages
         run: |
           dotnet pack ${{ env.PROJECT_LIB }} -c Release --output ${{ env.PUBLISH_PACKAGES_PATH }}
           dotnet pack ${{ env.PROJECT_DEFS }} -c Release --output ${{ env.PUBLISH_PACKAGES_PATH }}
-          
-      - name: Upload NuGet Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: NuGet
-          path: |
-            ${{ env.PUBLISH_PACKAGES_PATH }}
-          retention-days: 0
+
+      - name: Push to NuGet
+        run: dotnet nuget push "${{ env.PUBLISH_PACKAGES_PATH }}/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Setup AutoChangelog
         run: npm install -g auto-changelog
@@ -109,6 +104,13 @@ jobs:
           path: |
             ${{ env.PROJECT_GUI_BUILD_LINUX }}.tar.gz
             CHANGELOG.md
+          retention-days: 0
+
+      - name: Upload NuGet Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NuGet
+          path: ${{ env.PUBLISH_PACKAGES_PATH }}
           retention-days: 0
   
   release:
