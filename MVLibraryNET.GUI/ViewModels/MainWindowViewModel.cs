@@ -8,6 +8,7 @@ using System.Reactive;
 using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using MVLibraryNET.Definitions.MVGL.Structs;
 using MVLibraryNET.MVGL;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;

@@ -1,4 +1,5 @@
 using K4os.Compression.LZ4;
+using MVLibraryNET.Definitions.MVGL.Structs;
 using MVLibraryNET.MVGL.x64;
 using MVLibraryNET.Utilities;
 
@@ -6,7 +7,7 @@ namespace MVLibraryNET.MVGL;
 
 public static class MvglHelper
 {
-    public static unsafe ArrayRental ExtractFile(in MvglFile file, Stream stream)
+    public static ArrayRental ExtractFile(in MvglFile file, Stream stream)
     {
         if (file.FileSize == 0) return ArrayRental.Empty;
 

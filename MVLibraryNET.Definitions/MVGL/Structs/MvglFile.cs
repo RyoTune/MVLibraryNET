@@ -1,4 +1,4 @@
-namespace MVLibraryNET.MVGL;
+namespace MVLibraryNET.Definitions.MVGL.Structs;
 
 public struct MvglFile
 {
