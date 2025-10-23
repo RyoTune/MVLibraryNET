@@ -1,3 +1,4 @@
+using MVLibraryNET.Definitions.MVGL;
 using MVLibraryNET.Definitions.MVGL.Structs;
 using MVLibraryNET.Definitions.Utilities;
 
