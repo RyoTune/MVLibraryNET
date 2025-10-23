@@ -1,7 +1,7 @@
 using K4os.Compression.LZ4;
 using MVLibraryNET.Definitions.MVGL.Structs;
+using MVLibraryNET.Definitions.Utilities;
 using MVLibraryNET.MVGL.x64;
-using MVLibraryNET.Utilities;
 
 namespace MVLibraryNET.MVGL;
 

@@ -1,5 +1,5 @@
 using MVLibraryNET.Definitions.MVGL.Structs;
-using MVLibraryNET.Utilities;
+using MVLibraryNET.Definitions.Utilities;
 
 namespace MVLibraryNET.MVGL;
 

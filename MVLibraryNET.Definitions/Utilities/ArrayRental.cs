@@ -1,7 +1,7 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 
-namespace MVLibraryNET.Utilities;
+namespace MVLibraryNET.Definitions.Utilities;
 
 /// <summary>
 /// Represents a temporary array rental from the runtime's ArrayPool.
