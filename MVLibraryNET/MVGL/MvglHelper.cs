@@ -30,7 +30,7 @@ public static class MvglHelper
         return rawData;
     }
     
-    public static unsafe MvglFile[] GetFilesFromStream(Stream stream)
+    public static unsafe MvglFile[] GetFilesFromStream(Stream stream, Func<string, string>? nameNormalizer = null)
     {
         var header = new MDB1Header64();
         stream.ReadExactly(new(&header, sizeof(MDB1Header64)));
@@ -57,7 +57,7 @@ public static class MvglHelper
                 ref var dataItem = ref dataEntries[treeItem.DataId];
                 files[filesIdx] = new()
                 {
-                    FileName = nameEntries[i].ToString().Replace('\\', '/'),
+                    FileName = nameNormalizer != null ? nameNormalizer(nameEntries[i].ToString()) : nameEntries[i].ToString(),
                     FileOffset = (long)(dataItem.Offset + header.DataStart),
                     FileSize = (int)dataItem.CompressedSize,
                     ExtractSize = (int)dataItem.FullSize,

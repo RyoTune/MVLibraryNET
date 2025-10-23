@@ -8,6 +8,7 @@ using System.Reactive;
 using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using MVLibraryNET.Definitions.MVGL;
 using MVLibraryNET.Definitions.MVGL.Structs;
 using MVLibraryNET.MVGL;
 using ReactiveUI;
@@ -23,6 +24,7 @@ public partial class MainWindowViewModel : ViewModelBase, IActivatableViewModel
     [Reactive] private string _message = string.Empty;
 
     private MvglReader? _mvgl;
+    private readonly MvglReaderConfig _mvglConfig = new() { FileNameNormalizer = x => x.Replace('\\', '/') };
     private MvglFile[] _files = [];
 
     public MainWindowViewModel()
@@ -85,7 +87,7 @@ public partial class MainWindowViewModel : ViewModelBase, IActivatableViewModel
             var stopwatch = new Stopwatch();
             
             stopwatch.Start();
-            _mvgl = new(File.OpenRead(file), true);
+            _mvgl = new(File.OpenRead(file), true, _mvglConfig);
             _files = _mvgl.GetFiles();
             stopwatch.Stop();
             

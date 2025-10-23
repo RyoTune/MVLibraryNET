@@ -4,14 +4,14 @@ using MVLibraryNET.Definitions.Utilities;
 
 namespace MVLibraryNET.MVGL;
 
-public class MvglReader(Stream stream, bool ownsStream) : IMvglReader
+public class MvglReader(Stream stream, bool ownsStream, MvglReaderConfig? config = null) : IMvglReader
 {
     private readonly long _initialStreamPosition = stream.Position;
 
     public MvglFile[] GetFiles()
     {
         stream.Position = _initialStreamPosition;
-        return MvglHelper.GetFilesFromStream(stream);
+        return MvglHelper.GetFilesFromStream(stream, config?.FileNameNormalizer);
     }
 
     public ArrayRental ExtractFile(in MvglFile file)
