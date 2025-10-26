@@ -8,6 +8,7 @@
         <Authors>RyoTune</Authors>
         <Description>Type definitions for MVLibraryNET.</Description>
         <RepositoryUrl>https://github.com/RyoTune/MVLibraryNET</RepositoryUrl>
+        <Version>1.1.0</Version>
     </PropertyGroup>
 
 </Project>
