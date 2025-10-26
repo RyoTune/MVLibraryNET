@@ -2,9 +2,7 @@ name: Build and Publish (NuGet)
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - '*.*.*'
+
 env:
   IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
   RELEASE_TAG: ${{ github.ref_name }}
