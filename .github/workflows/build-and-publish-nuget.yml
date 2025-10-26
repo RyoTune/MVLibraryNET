@@ -1,0 +1,40 @@
+name: Build and Publish (NuGet)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*.*.*'
+env:
+  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
+  RELEASE_TAG: ${{ github.ref_name }}
+  PROJECT_LIB: MVLibraryNET
+  PROJECT_DEFS: MVLibraryNET.Definitions
+  PROJECT_GUI: MVLibraryNET.GUI
+  PROJECT_GUI_BUILD_WIN: MVLibraryNET.GUI-windows
+  PROJECT_GUI_BUILD_LINUX: MVLibraryNET.GUI-linux
+  
+  PUBLISH_PACKAGES_PATH: ./Publish/Packages
+
+jobs:
+  nuget-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build NuGet Packages
+        run: |
+          dotnet pack ${{ env.PROJECT_LIB }} -c Release --output ${{ env.PUBLISH_PACKAGES_PATH }}
+          dotnet pack ${{ env.PROJECT_DEFS }} -c Release --output ${{ env.PUBLISH_PACKAGES_PATH }}
+
+      - name: Push to NuGet
+        run: dotnet nuget push "${{ env.PUBLISH_PACKAGES_PATH }}/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
