@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVLibraryNET.GUI", "MVLibra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVLibraryNET.Definitions", "MVLibraryNET.Definitions\MVLibraryNET.Definitions.csproj", "{22A6B4EF-F052-43E6-93E0-2875C5ABF94C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVLibraryNET.Tests", "MVLibraryNET.Tests\MVLibraryNET.Tests.csproj", "{B52CDC52-BFA9-4465-8586-1C2FC6BB0739}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{22A6B4EF-F052-43E6-93E0-2875C5ABF94C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22A6B4EF-F052-43E6-93E0-2875C5ABF94C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{22A6B4EF-F052-43E6-93E0-2875C5ABF94C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B52CDC52-BFA9-4465-8586-1C2FC6BB0739}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B52CDC52-BFA9-4465-8586-1C2FC6BB0739}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B52CDC52-BFA9-4465-8586-1C2FC6BB0739}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B52CDC52-BFA9-4465-8586-1C2FC6BB0739}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
