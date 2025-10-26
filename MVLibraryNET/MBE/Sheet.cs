@@ -20,8 +20,8 @@ public unsafe class Sheet
     internal readonly ColumnType[] ColCodes = [];
     
     private readonly int _rowSize;
-    private readonly int _numRows;
     private readonly long _basePos;
+    private int _numRows;
 
     public Sheet(string name, string csvContent)
     {
@@ -31,7 +31,7 @@ public unsafe class Sheet
         for (var rowIdx = 0; rowIdx < lines.Length; rowIdx++)
         {
             var rowStr = lines[rowIdx];
-            var rowCells = rowStr.Split(',', StringSplitOptions.TrimEntries);
+            var rowCells = rowStr.Split(',');
             
             // Load header row column types.
             if (rowIdx == 0)
@@ -278,6 +278,28 @@ public unsafe class Sheet
     {
         foreach (var cell in diff.Cells) Cells[cell.Key] = cell.Value;
         foreach (var str in diff.Strings) RelativeStringMap[str.Key] = str.Value;
+    }
+
+    /// <summary>
+    /// Appends a new row from a CSV row string.
+    /// </summary>
+    /// <param name="row">CSV row string.</param>
+    public void AppendRow(string row)
+    {
+        var rowCells = row.Split(',');
+        for (var colIdx = 0; colIdx < rowCells.Length; colIdx++)
+        {
+            var cell = new Cell(_numRows, colIdx);
+            var colType = ColCodes[colIdx];
+            var cellValueStr = rowCells[colIdx];
+            var cellValue = GetCellValue(colType, cellValueStr);
+            Cells[cell] = cellValue;
+
+            if (IsColumnString(colType))
+                SetCellString(ref cell, cellValueStr.Trim('"'));
+        }
+
+        _numRows++;
     }
 
     public record SheetDiff(IReadOnlyDictionary<Cell, long> Cells, IReadOnlyDictionary<long, string?> Strings);
