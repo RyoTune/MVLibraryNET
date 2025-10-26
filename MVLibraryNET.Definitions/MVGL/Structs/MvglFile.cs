@@ -1,5 +1,8 @@
 namespace MVLibraryNET.Definitions.MVGL.Structs;
 
+/// <summary>
+/// Encapsulates all known information about a file in an MVGL.
+/// </summary>
 public struct MvglFile
 {
     /// <summary>

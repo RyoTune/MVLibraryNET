@@ -8,13 +8,13 @@ public class Mbe
     private const int Chnk = 0x4B4E4843;
     private readonly Dictionary<long, string> _stringMap = [];
     
-    public Mbe(string mbeFile) : this(File.OpenRead(mbeFile))
+    public Mbe(string mbeFile) : this(File.OpenRead(mbeFile), true)
     {
     }
 
-    public Mbe(Stream stream)
+    public Mbe(Stream stream, bool ownsStream)
     {
-        using var br = new BinaryReader(stream, Encoding.Default);
+        using var br = new BinaryReader(stream, Encoding.Default, !ownsStream);
         
         // ReSharper disable once InconsistentNaming
         if (br.ReadInt32() != Expa) throw new InvalidDataException("'EXPA' not found.");
@@ -43,8 +43,8 @@ public class Mbe
         // Fix up string cells.
         foreach (var sheet in Sheets.Values) sheet.ApplyMbeStringMap(_stringMap);
     }
-    
-    public Dictionary<string, Sheet> Sheets { get; } = [];
+
+    public Dictionary<string, Sheet> Sheets { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public void Write(Stream stream)
     {
