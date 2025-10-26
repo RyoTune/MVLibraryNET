@@ -181,7 +181,7 @@ public unsafe class Sheet
         var stream = bw.BaseStream;
         stream.AlignStream(8);
 
-        bw.WriteStringIncludingLength(Name);
+        bw.WritePaddedStringIncludingLength(Name);
 
         bw.Write(ColCodes.Length);
         fixed (ColumnType* ptr = ColCodes)

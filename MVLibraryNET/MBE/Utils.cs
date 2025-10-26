@@ -18,8 +18,12 @@ public static class Utils
         return Encoding.UTF8.GetString(strSpan);
     }
     
-    public static void WriteStringIncludingLength(this BinaryWriter bw, string str)
+    public static void WritePaddedStringIncludingLength(this BinaryWriter bw, string str)
     {
+        str += "\0\0";
+        var alignedLen = Align4(str.Length);
+        str = str.PadRight(alignedLen, '\0');
+        
         bw.Write(str.Length);
         bw.Write(Encoding.UTF8.GetBytes(str));
     }

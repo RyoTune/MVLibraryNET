@@ -75,7 +75,7 @@ public class Mbe
         foreach (var kvp in strMap)
         {
             bw.Write(Utils.Align8((int)kvp.Key));
-            bw.WriteStringIncludingLength(kvp.Value);
+            bw.WritePaddedStringIncludingLength(kvp.Value);
         }
     }
 }
