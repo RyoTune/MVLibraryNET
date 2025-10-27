@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace MVLibraryNET.MBE;
 
 public unsafe class Sheet
@@ -146,7 +148,7 @@ public unsafe class Sheet
                         break;
                     case ColumnType.Float:
                         Utils.Align(ref rowCellOffset, 4);
-                        cellValue = (long)BitConverter.ToSingle(rowBuffer, rowCellOffset);
+                        cellValue = Unsafe.BitCast<float, int>(BitConverter.ToSingle(rowBuffer, rowCellOffset));
                         rowCellOffset += 4;
                         break;
                     case ColumnType.String:
@@ -269,7 +271,7 @@ public unsafe class Sheet
                         break;
                     case ColumnType.Float:
                         Utils.Align(ref rowCellOffset, 4);
-                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), (float)cellValue);
+                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), Unsafe.BitCast<int, float>((int)cellValue));
                         rowCellOffset += 4;
                         break;
 
@@ -373,7 +375,7 @@ public unsafe class Sheet
             ColumnType.Int => int.Parse(valueStr),
             ColumnType.Short => short.Parse(valueStr),
             ColumnType.Byte => sbyte.Parse(valueStr),
-            ColumnType.Float => (long)float.Parse(valueStr),
+            ColumnType.Float => Unsafe.BitCast<float, int>(float.Parse(valueStr)),
             ColumnType.String3 or ColumnType.String or ColumnType.String2 => 0,
             ColumnType.Bool => char.IsDigit(valueStr.First()) ? valueStr == "1" ? 1 : 0 : bool.Parse(valueStr) ? 1 : 0,
             ColumnType.Empty => 0,
