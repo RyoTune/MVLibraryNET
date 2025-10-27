@@ -20,7 +20,7 @@ public unsafe class Sheet
         [ColumnType.String3] = 8,
     };
     
-    internal readonly ColumnType[] ColCodes = [];
+    internal readonly ColumnType[] ColCodes;
     
     private readonly int _rowSize;
     private readonly long _basePos;
@@ -41,7 +41,7 @@ public unsafe class Sheet
             {
                 var col = row[colIdx];
                 var cellValueStr = col.ToString();
-                var cell = new Cell(rowIdx - 1, colIdx);
+                var cell = new Cell(rowIdx, colIdx);
                 var colType = ColCodes[colIdx];
                 var cellValue = GetCellValue(colType, cellValueStr);
                 Cells[cell] = cellValue;
