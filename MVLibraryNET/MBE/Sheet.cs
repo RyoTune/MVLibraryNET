@@ -57,12 +57,13 @@ public unsafe class Sheet
 
     private static ColumnType GetColumnType(string typeName)
     {
-        if (Enum.TryParse(typeName.Split(' ').First(), true, out ColumnType type) 
-            || Enum.TryParse(typeName.Split('_').First(), true, out type))
+        typeName = typeName.Split(' ', '_').First();
+        if (Enum.TryParse(typeName, true, out ColumnType type) 
+            || Enum.TryParse(typeName, true, out type))
         {
             return type;
         }
-
+        
         switch (typeName.ToLowerInvariant())
         {
             case "int32": return ColumnType.Int;
