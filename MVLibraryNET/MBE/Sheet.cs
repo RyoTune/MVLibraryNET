@@ -146,7 +146,7 @@ public unsafe class Sheet
                         break;
                     case ColumnType.Float:
                         Utils.Align(ref rowCellOffset, 4);
-                        cellValue = BitConverter.ToInt32(rowBuffer, rowCellOffset);
+                        cellValue = (long)BitConverter.ToSingle(rowBuffer, rowCellOffset);
                         rowCellOffset += 4;
                         break;
                     case ColumnType.String:
