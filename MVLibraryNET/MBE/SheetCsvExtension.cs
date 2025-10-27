@@ -18,8 +18,6 @@ public static class SheetCsvExtension
             sb.Append(',');
         }
 
-        sb.AppendLine();
-
         var currRow = 0;
         foreach (var kvp in sheet.Cells)
         {

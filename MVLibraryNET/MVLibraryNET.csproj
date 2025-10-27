@@ -9,11 +9,12 @@
         <Authors>RyoTune</Authors>
         <Description>.NET library for working with Media.Vision files.</Description>
         <Copyright>MIT</Copyright>
-        <Version>1.1.6</Version>
+        <Version>1.1.7</Version>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+      <PackageReference Include="Sep" Version="0.11.3" />
     </ItemGroup>
 
     <ItemGroup>

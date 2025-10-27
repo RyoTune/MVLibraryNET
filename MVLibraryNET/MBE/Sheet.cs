@@ -1,10 +1,11 @@
 using System.Runtime.CompilerServices;
+using nietras.SeparatedValues;
 
 namespace MVLibraryNET.MBE;
 
 public unsafe class Sheet
 {
-    private const int NumBoolBits = 32;
+    private static readonly Sep Csv = new(',');
 
     private static readonly Dictionary<ColumnType, byte> ColumnSizes = new()
     {
@@ -28,32 +29,28 @@ public unsafe class Sheet
     public Sheet(string name, string csvContent)
     {
         Name = name;
-        var lines = csvContent.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
-        _numRows = lines.Length - 1;
-        for (var rowIdx = 0; rowIdx < lines.Length; rowIdx++)
+
+        var csv = Csv.Reader().FromText(csvContent);
+        ColCodes = csv.Header.ColNames.Select(GetColumnType).ToArray();
+        _rowSize = ColCodes.Length;
+
+        var rowIdx = 0;
+        foreach (var row in csv)
         {
-            var rowStr = lines[rowIdx];
-            var rowCells = rowStr.Split(',');
-            
-            // Load header row column types.
-            if (rowIdx == 0)
+            for (int colIdx = 0; colIdx < row.ColCount; colIdx++)
             {
-                ColCodes = rowCells.Select(GetColumnType).ToArray();
-                _rowSize = GetRowSize();
-                continue;
-            }
-            
-            for (var colIdx = 0; colIdx < rowCells.Length; colIdx++)
-            {
+                var col = row[colIdx];
+                var cellValueStr = col.ToString();
                 var cell = new Cell(rowIdx - 1, colIdx);
                 var colType = ColCodes[colIdx];
-                var cellValueStr = rowCells[colIdx];
                 var cellValue = GetCellValue(colType, cellValueStr);
                 Cells[cell] = cellValue;
 
                 if (IsColumnString(colType))
-                    SetCellString(ref cell, cellValueStr.Trim('"'));
+                    SetCellString(ref cell, Utils.TrimOneQuote(cellValueStr));
             }
+
+            rowIdx++;
         }
     }
 

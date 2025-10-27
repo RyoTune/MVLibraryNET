@@ -56,4 +56,15 @@ public static class Utils
     public static int Align4(int offset) => (offset + 3) & ~3;
     
     public static int Align2(int offset) => (offset + 1) & ~1;
+    
+    public static string TrimOneQuote(string s)
+    {
+        if (s.Length >= 2 && s[0] == '"' && s[^1] == '"')
+            return s.Substring(1, s.Length - 2);
+        if (s.Length > 0 && s[0] == '"')
+            return s[1..];
+        if (s.Length > 0 && s[^1] == '"')
+            return s[..^1];
+        return s;
+    }
 }
