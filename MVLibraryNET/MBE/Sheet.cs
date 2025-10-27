@@ -263,9 +263,13 @@ public unsafe class Sheet
                         break;
 
                     case ColumnType.Int:
-                    case ColumnType.Float:
                         Utils.Align(ref rowCellOffset, 4);
                         BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), (int)cellValue);
+                        rowCellOffset += 4;
+                        break;
+                    case ColumnType.Float:
+                        Utils.Align(ref rowCellOffset, 4);
+                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), (float)cellValue);
                         rowCellOffset += 4;
                         break;
 
@@ -371,7 +375,7 @@ public unsafe class Sheet
             ColumnType.Byte => sbyte.Parse(valueStr),
             ColumnType.Float => (long)float.Parse(valueStr),
             ColumnType.String3 or ColumnType.String or ColumnType.String2 => 0,
-            ColumnType.Bool => bool.Parse(valueStr) ? 1 : 0,
+            ColumnType.Bool => char.IsDigit(valueStr.First()) ? valueStr == "1" ? 1 : 0 : bool.Parse(valueStr) ? 1 : 0,
             ColumnType.Empty => 0,
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
