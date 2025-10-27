@@ -303,22 +303,30 @@ public unsafe class Sheet
     }
 
     /// <summary>
-    /// Appends a new row from a CSV row string.
+    /// Appends CSV data to sheet.
     /// </summary>
-    /// <param name="row">CSV row string.</param>
-    public void AppendRow(string row)
+    /// <param name="csvContent">CSV row string.</param>
+    public void AppendCsv(string csvContent)
     {
-        var rowCells = row.Split(',');
-        for (var colIdx = 0; colIdx < rowCells.Length; colIdx++)
-        {
-            var cell = new Cell(_numRows, colIdx);
-            var colType = ColCodes[colIdx];
-            var cellValueStr = rowCells[colIdx];
-            var cellValue = GetCellValue(colType, cellValueStr);
-            Cells[cell] = cellValue;
+        var csv = Csv.Reader().FromText(csvContent);
 
-            if (IsColumnString(colType))
-                SetCellString(ref cell, cellValueStr.Trim('"'));
+        var rowIdx = _numRows;
+        foreach (var row in csv)
+        {
+            for (int colIdx = 0; colIdx < row.ColCount; colIdx++)
+            {
+                var col = row[colIdx];
+                var cellValueStr = col.ToString();
+                var cell = new Cell(rowIdx, colIdx);
+                var colType = ColCodes[colIdx];
+                var cellValue = GetCellValue(colType, cellValueStr);
+                Cells[cell] = cellValue;
+
+                if (IsColumnString(colType))
+                    SetCellString(ref cell, Utils.TrimOneQuote(cellValueStr));
+            }
+
+            rowIdx++;
         }
 
         _numRows++;
