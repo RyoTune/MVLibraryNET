@@ -36,7 +36,7 @@ public unsafe class Sheet
             // Load header row column types.
             if (rowIdx == 0)
             {
-                ColCodes = rowCells.Select(x => Enum.Parse<ColumnType>(x.Split(' ').First(), true)).ToArray();
+                ColCodes = rowCells.Select(GetColumnType).ToArray();
                 _rowSize = GetRowSize();
                 continue;
             }
@@ -53,6 +53,24 @@ public unsafe class Sheet
                     SetCellString(ref cell, cellValueStr.Trim('"'));
             }
         }
+    }
+
+    private static ColumnType GetColumnType(string typeName)
+    {
+        if (Enum.TryParse(typeName.Split(' ').First(), true, out ColumnType type) 
+            || Enum.TryParse(typeName.Split('_').First(), true, out type))
+        {
+            return type;
+        }
+
+        switch (typeName.ToLowerInvariant())
+        {
+            case "int32": return ColumnType.Int;
+            case "int16": return ColumnType.Short;
+            case "int8": return ColumnType.Byte;
+        }
+
+        throw new InvalidDataException($"Unknown column type: {typeName}");
     }
 
     public Sheet(string csvFile) : this(Path.GetFileNameWithoutExtension(csvFile), File.ReadAllText(csvFile)) {}
