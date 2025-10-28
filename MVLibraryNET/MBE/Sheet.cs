@@ -6,6 +6,7 @@ namespace MVLibraryNET.MBE;
 public unsafe class Sheet
 {
     private static readonly Sep Csv = new(',');
+    private static readonly SepReaderOptions CsvConfig = new() { Unescape = true };
 
     private static readonly Dictionary<ColumnType, byte> ColumnSizes = new()
     {
@@ -30,7 +31,7 @@ public unsafe class Sheet
     {
         Name = name;
 
-        var csv = Csv.Reader().FromText(csvContent);
+        using var csv = Csv.Reader(x => CsvConfig).FromText(csvContent);
         ColCodes = csv.Header.ColNames.Select(GetColumnType).ToArray();
         _rowSize = ColCodes.Length;
 
@@ -47,7 +48,7 @@ public unsafe class Sheet
                 Cells[cell] = cellValue;
 
                 if (IsColumnString(colType))
-                    SetCellString(ref cell, Utils.TrimOneQuote(cellValueStr));
+                    SetCellString(ref cell, cellValueStr);
             }
 
             rowIdx++;
@@ -130,7 +131,7 @@ public unsafe class Sheet
                     case ColumnType.Empty:
                         break;
                     case ColumnType.Byte:
-                        cellValue = rowBuffer[rowCellOffset];
+                        cellValue = (sbyte)rowBuffer[rowCellOffset];
                         rowCellOffset += 1;
                         break;
                     case ColumnType.Short:
@@ -145,14 +146,14 @@ public unsafe class Sheet
                         break;
                     case ColumnType.Float:
                         Utils.Align(ref rowCellOffset, 4);
-                        cellValue = Unsafe.BitCast<float, int>(BitConverter.ToSingle(rowBuffer, rowCellOffset));
+                        cellValue = Unsafe.BitCast<float, int>((float)Math.Round(BitConverter.ToSingle(rowBuffer, rowCellOffset), 3));
                         rowCellOffset += 4;
                         break;
                     case ColumnType.String:
                     case ColumnType.String2:
                     case ColumnType.String3:
                         Utils.Align(ref rowCellOffset, 8);
-                        SetCellString(ref cell, null);
+                        SetCellString(ref cell, string.Empty);
                         rowCellOffset += 8;
                         break;
                     default:
@@ -164,16 +165,21 @@ public unsafe class Sheet
         }
     }
 
-    private void SetCellString(ref Cell cell, string? str)
+    private void SetCellString(ref Cell cell, string str)
     {
-        var strOfs = GetCellRowOffset(ref cell) + cell.Row * _rowSize;
-        RelativeStringMap[strOfs] = str;
+        if (string.IsNullOrEmpty(str))
+        {
+            StringMap.Remove(cell);
+        }
+        else
+        {
+            StringMap[cell] = str;
+        }
     }
 
     public string? GetCellString(ref Cell cell)
     {
-        var strOfs = GetCellRowOffset(ref cell) + cell.Row * _rowSize;
-        RelativeStringMap.TryGetValue(strOfs, out var str);
+        StringMap.TryGetValue(cell, out var str);
         return str;
     }
 
@@ -187,7 +193,7 @@ public unsafe class Sheet
     /// <summary>
     /// String map, with the key being a cell's position relative to the start of row data.
     /// </summary>
-    public Dictionary<long, string?> RelativeStringMap { get; } = [];
+    public Dictionary<Cell, string> StringMap { get; } = [];
 
     /// <summary>
     /// Writes sheet data to stream.
@@ -268,7 +274,8 @@ public unsafe class Sheet
                         break;
                     case ColumnType.Float:
                         Utils.Align(ref rowCellOffset, 4);
-                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), Unsafe.BitCast<int, float>((int)cellValue));
+                        var fValue = (float)Math.Round(Unsafe.BitCast<int, float>((int)cellValue), 3);
+                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), fValue);
                         rowCellOffset += 4;
                         break;
 
@@ -299,7 +306,7 @@ public unsafe class Sheet
     public void MergeDiff(SheetDiff diff)
     {
         foreach (var cell in diff.Cells) Cells[cell.Key] = cell.Value;
-        foreach (var str in diff.Strings) RelativeStringMap[str.Key] = str.Value;
+        foreach (var str in diff.Strings) StringMap[str.Key] = str.Value;
     }
 
     /// <summary>
@@ -308,12 +315,12 @@ public unsafe class Sheet
     /// <param name="csvContent">CSV row string.</param>
     public void AppendCsv(string csvContent)
     {
-        var csv = Csv.Reader().FromText(csvContent);
+        var csv = Csv.Reader(x => CsvConfig).FromText(csvContent);
 
         var rowIdx = _numRows;
         foreach (var row in csv)
         {
-            for (int colIdx = 0; colIdx < row.ColCount; colIdx++)
+            for (var colIdx = 0; colIdx < row.ColCount; colIdx++)
             {
                 var col = row[colIdx];
                 var cellValueStr = col.ToString();
@@ -323,7 +330,7 @@ public unsafe class Sheet
                 Cells[cell] = cellValue;
 
                 if (IsColumnString(colType))
-                    SetCellString(ref cell, Utils.TrimOneQuote(cellValueStr));
+                    SetCellString(ref cell, cellValueStr);
             }
 
             rowIdx++;
@@ -332,7 +339,7 @@ public unsafe class Sheet
         _numRows++;
     }
 
-    public record SheetDiff(IReadOnlyDictionary<Cell, long> Cells, IReadOnlyDictionary<long, string?> Strings);
+    public record SheetDiff(IReadOnlyDictionary<Cell, long> Cells, IReadOnlyDictionary<Cell, string> Strings);
     
     /// <summary>
     /// Generates a diff of cells and strings compared to <paramref name="other"/>.<br/>
@@ -342,7 +349,7 @@ public unsafe class Sheet
     public SheetDiff GenerateDiff(Sheet other)
     {
         var diffCells = other.Cells.Where(x => IsCellDiff(x.Key, x.Value)).ToDictionary();
-        var diffStrings = other.RelativeStringMap.Where(x => IsStringDiff(x.Key, x.Value)).ToDictionary();
+        var diffStrings = other.StringMap.Where(x => IsStringDiff(x.Key, x.Value)).ToDictionary();
         return new(diffCells, diffStrings);
     }
 
@@ -352,9 +359,10 @@ public unsafe class Sheet
         return cellValue != value;
     }
 
-    private bool IsStringDiff(long cellOfs, string? otherStr)
+    private bool IsStringDiff(Cell otherCell, string otherStr)
     {
-        if (!RelativeStringMap.TryGetValue(cellOfs, out var currStr)) return true;
+        if (!StringMap.TryGetValue(otherCell, out var currStr)) return true;
+        if (string.IsNullOrEmpty(currStr) && string.IsNullOrEmpty(otherStr)) return false;
         return currStr != otherStr;
     }
 
@@ -364,10 +372,10 @@ public unsafe class Sheet
     /// <param name="offsetToStringMap">MBE string map, which uses absolute cell positions (offset from beginning of file) for keys.</param>
     public void ApplyMbeStringMap(Dictionary<long, string> offsetToStringMap)
     {
-        foreach (var offset in RelativeStringMap)
+        foreach (var kvp in offsetToStringMap)
         {
-            if (offsetToStringMap.TryGetValue(Utils.Align8((int)(offset.Key + _basePos)), out var str))
-                RelativeStringMap[offset.Key] = str;
+            var cell = GetCellByOffset(kvp.Key);
+            SetCellString(ref cell, kvp.Value);
         }
     }
 
@@ -380,7 +388,7 @@ public unsafe class Sheet
             ColumnType.Int => int.Parse(valueStr),
             ColumnType.Short => short.Parse(valueStr),
             ColumnType.Byte => sbyte.Parse(valueStr),
-            ColumnType.Float => Unsafe.BitCast<float, int>(float.Parse(valueStr)),
+            ColumnType.Float => Unsafe.BitCast<float, int>((float)Math.Round(float.Parse(valueStr), 3)),
             ColumnType.String3 or ColumnType.String or ColumnType.String2 => 0,
             ColumnType.Bool => char.IsDigit(valueStr.First()) ? valueStr == "1" ? 1 : 0 : bool.Parse(valueStr) ? 1 : 0,
             ColumnType.Empty => 0,
@@ -421,6 +429,18 @@ public unsafe class Sheet
 
         return cellRowOfs;
     }
+
+    private Cell GetCellByOffset(long offset)
+    {
+        var rowIdx = (offset - _basePos) / _rowSize;
+        var colIdx = (offset - _basePos) % _rowSize;
+        return new((int)rowIdx, (int)colIdx);
+    }
+
+    /// <summary>
+    /// Gets the cell's offset within the sheet.
+    /// </summary>
+    internal long GetCellOffset(ref Cell cell) => cell.Row * _rowSize + GetCellRowOffset(ref cell);
 
     /// <summary>
     /// Gets the row size, aligned to 8.<br/>

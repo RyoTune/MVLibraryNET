@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace MVLibraryNET.MBE;
@@ -11,7 +12,7 @@ public static class SheetCsvExtension
         for (var i = 0; i < sheet.ColCodes.Length; i++)
         {
             var col = sheet.ColCodes[i];
-            sb.Append(col);
+            sb.Append($"{col} {i + 1}");
 
             // Don't append comma after last column.
             if (i == sheet.ColCodes.Length - 1) break;
@@ -46,7 +47,8 @@ public static class SheetCsvExtension
                     sb.Append(value);
                     break;
                 case ColumnType.Float:
-                    sb.Append((float)value);
+                    var fValue = (float)Math.Round(Unsafe.BitCast<int, float>((int)value), 3);
+                    sb.Append(fValue);
                     break;
                 case ColumnType.String:
                 case ColumnType.String2:

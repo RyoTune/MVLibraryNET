@@ -57,9 +57,11 @@ public class Mbe
         foreach (var sheet in Sheets.Values)
         {
             var rowsPos = sheet.Write(bw);
-            foreach (var kvp in sheet.RelativeStringMap.Where(x => !string.IsNullOrEmpty(x.Value)))
+            foreach (var kvp in sheet.StringMap.Where(x => !string.IsNullOrEmpty(x.Value)))
             {
-                strMap[kvp.Key + rowsPos] = kvp.Value!;
+                var cell = kvp.Key;
+                var offset = Utils.Align8((int)(sheet.GetCellOffset(ref cell) + rowsPos));
+                strMap[offset] = kvp.Value;
             }
         }
 
