@@ -12,7 +12,7 @@ public static class Utils
         var strSpan = new Span<byte>(br.ReadBytes(len));
         if (strSpan[^1] == 0)
         {
-            strSpan = strSpan.Slice(0, strSpan.IndexOf((byte)0));
+            strSpan = strSpan[..strSpan.IndexOf((byte)0)];
         }
 
         return Encoding.UTF8.GetString(strSpan);
@@ -21,11 +21,12 @@ public static class Utils
     public static void WritePaddedStringIncludingLength(this BinaryWriter bw, string str)
     {
         str += "\0\0";
-        var alignedLen = Align4(str.Length);
-        str = str.PadRight(alignedLen, '\0');
+        var bytes = Encoding.UTF8.GetBytes(str);
+        var alignedLen = Align4(bytes.Length);
+        Array.Resize(ref bytes, alignedLen);
         
-        bw.Write(str.Length);
-        bw.Write(Encoding.UTF8.GetBytes(str));
+        bw.Write(alignedLen);
+        bw.Write(bytes);
     }
 
     public static void AlignStream(this Stream stream, byte alignment) =>
