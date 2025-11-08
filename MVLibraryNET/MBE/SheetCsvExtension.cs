@@ -47,7 +47,15 @@ public static class SheetCsvExtension
                 case ColumnType.String2:
                 case ColumnType.String3:
                 case ColumnType.Empty:
-                    row[header[cell.Column]].Set(sheet.GetCellString(cell) ?? string.Empty);
+                case ColumnType.IntArray:
+                    if (sheet.TryGetCellChnkValue(cell, out var chnkValue))
+                    {
+                        row[header[cell.Column]].Set(GetChnkValueStr(chnkValue));
+                    }
+                    else
+                    {
+                        row[header[cell.Column]].Set(string.Empty);
+                    }
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -56,5 +64,11 @@ public static class SheetCsvExtension
 
         row.Dispose();
         return writer.ToString();
+    }
+
+    private static string GetChnkValueStr(object chnkValue)
+    {
+        if (chnkValue is int[] ints) return string.Join(' ', ints.Select(x => x.ToString()));
+        return chnkValue.ToString() ?? string.Empty;
     }
 }

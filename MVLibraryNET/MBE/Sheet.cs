@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using nietras.SeparatedValues;
 
@@ -5,8 +6,7 @@ namespace MVLibraryNET.MBE;
 
 public unsafe class Sheet
 {
-    private static readonly Sep Csv = new(',');
-    private static readonly SepReaderOptions CsvConfig = new() { Unescape = true };
+    private static readonly SepReaderOptions CsvReader = Sep.Reader(_ => new() { Unescape = true, Sep = new(',') });
 
     private static readonly Dictionary<ColumnType, byte> ColumnSizes = new()
     {
@@ -19,19 +19,25 @@ public unsafe class Sheet
         [ColumnType.String] = 8,
         [ColumnType.String2] = 8,
         [ColumnType.String3] = 8,
+        [ColumnType.IntArray] = 8,
     };
     
-    internal readonly ColumnType[] ColCodes;
     
-    private readonly int _rowSize;
+    internal readonly ColumnType[] ColCodes;
     private readonly long _basePos;
-    private int _numRows;
+    private readonly int _rowSize;
+    private readonly int _initNumRows;
+    private readonly Dictionary<Cell, object> _cellsChnkValues = [];
+    
+    // Would *prefer* to calculate cell offset from base pos + row offset
+    // but this is shrimply easier... *sigh*
+    private readonly Dictionary<long, Cell> _chnkOffsetToCellMap = [];
 
     public Sheet(string name, string csvContent)
     {
         Name = name;
 
-        using var csv = Csv.Reader(x => CsvConfig).FromText(csvContent);
+        using var csv = CsvReader.FromText(csvContent);
         ColCodes = csv.Header.ColNames.Select(GetColumnType).ToArray();
         _rowSize = ColCodes.Length;
 
@@ -47,8 +53,8 @@ public unsafe class Sheet
                 var cellValue = GetCellValue(colType, cellValueStr);
                 Cells[cell] = cellValue;
 
-                if (IsColumnString(colType))
-                    SetCellString(ref cell, cellValueStr);
+                if (IsColumnChnk(colType))
+                    _cellsChnkValues[cell] = GetChnkValue(colType, cellValueStr);
             }
 
             rowIdx++;
@@ -57,18 +63,19 @@ public unsafe class Sheet
 
     private static ColumnType GetColumnType(string typeName)
     {
-        typeName = typeName.Split(' ', '_').First();
+        typeName = typeName.Split(' ', '_').First().ToLowerInvariant();
         if (Enum.TryParse(typeName, true, out ColumnType type) 
             || Enum.TryParse(typeName, true, out type))
         {
             return type;
         }
         
-        switch (typeName.ToLowerInvariant())
+        switch (typeName)
         {
             case "int32": return ColumnType.Int;
             case "int16": return ColumnType.Short;
             case "int8": return ColumnType.Byte;
+            case "int array": return ColumnType.IntArray;
         }
 
         throw new InvalidDataException($"Unknown column type: {typeName}");
@@ -76,7 +83,7 @@ public unsafe class Sheet
 
     public Sheet(string csvFile) : this(Path.GetFileNameWithoutExtension(csvFile), File.ReadAllText(csvFile)) {}
     
-    public Sheet(BinaryReader br)
+    public Sheet(BinaryReader br, Chnk chnk)
     {
         var stream = br.BaseStream;
         stream.AlignStream(8);
@@ -88,22 +95,18 @@ public unsafe class Sheet
         fixed (ColumnType* ptr = ColCodes) stream.ReadExactly(new(ptr, sizeof(ColumnType) * numCols));
         
         _rowSize = br.ReadInt32();
-        #if DEBUG
-        var calcRowSize = GetRowSize();
-        if (calcRowSize < _rowSize) throw new();
-        #endif
-        _numRows = br.ReadInt32();
+        _initNumRows = br.ReadInt32();
 
         _basePos = stream.Position;
         var rowBuffer = GC.AllocateUninitializedArray<byte>(_rowSize);
-        for (var rowIdx = 0; rowIdx < _numRows; rowIdx++)
+        for (var rowIdx = 0; rowIdx < _initNumRows; rowIdx++)
         {
             stream.AlignStream(8);
 
-            var rowOffset = stream.Position;
+            var rowPos = stream.Position;
             stream.ReadExactly(new(rowBuffer));
             
-            var rowCellOffset = 0;
+            var cellOffset = 0;
             
             var currBools = 0;
             byte currBitOffset = 0;
@@ -119,9 +122,9 @@ public unsafe class Sheet
                     case ColumnType.Bool:
                         if (currBitOffset == 0)
                         {
-                            Utils.Align(ref rowCellOffset, 4);
-                            currBools = BitConverter.ToInt32(rowBuffer, rowCellOffset);
-                            rowCellOffset += 4;
+                            Utils.Align(ref cellOffset, 4);
+                            currBools = BitConverter.ToInt32(rowBuffer, cellOffset);
+                            cellOffset += 4;
                         }
 
                         cellValue = (currBools >> currBitOffset) & 1;
@@ -131,30 +134,37 @@ public unsafe class Sheet
                     case ColumnType.Empty:
                         break;
                     case ColumnType.Byte:
-                        cellValue = (sbyte)rowBuffer[rowCellOffset];
-                        rowCellOffset += 1;
+                        cellValue = (sbyte)rowBuffer[cellOffset];
+                        cellOffset += 1;
                         break;
                     case ColumnType.Short:
-                        Utils.Align(ref rowCellOffset, 2);
-                        cellValue = BitConverter.ToInt16(rowBuffer, rowCellOffset);
-                        rowCellOffset += 2;
+                        Utils.Align(ref cellOffset, 2);
+                        cellValue = BitConverter.ToInt16(rowBuffer, cellOffset);
+                        cellOffset += 2;
                         break;
                     case ColumnType.Int:
-                        Utils.Align(ref rowCellOffset, 4);
-                        cellValue = BitConverter.ToInt32(rowBuffer, rowCellOffset);
-                        rowCellOffset += 4;
+                        Utils.Align(ref cellOffset, 4);
+                        cellValue = BitConverter.ToInt32(rowBuffer, cellOffset);
+                        cellOffset += 4;
                         break;
                     case ColumnType.Float:
-                        Utils.Align(ref rowCellOffset, 4);
-                        cellValue = Unsafe.BitCast<float, int>((float)Math.Round(BitConverter.ToSingle(rowBuffer, rowCellOffset), 3));
-                        rowCellOffset += 4;
+                        Utils.Align(ref cellOffset, 4);
+                        cellValue = Unsafe.BitCast<float, int>((float)Math.Round(BitConverter.ToSingle(rowBuffer, cellOffset), 3));
+                        cellOffset += 4;
                         break;
                     case ColumnType.String:
                     case ColumnType.String2:
                     case ColumnType.String3:
-                        Utils.Align(ref rowCellOffset, 8);
-                        SetCellString(ref cell, string.Empty);
-                        rowCellOffset += 8;
+                        Utils.Align(ref cellOffset, 8);
+                        chnk.SetChnkItem((int)(rowPos + cellOffset), string.Empty);
+                        _chnkOffsetToCellMap[rowPos + cellOffset] = cell;
+                        cellOffset += 8;
+                        break;
+                    case ColumnType.IntArray:
+                        Utils.Align(ref cellOffset, 8);
+                        chnk.SetChnkItem((int)(rowPos + cellOffset), Array.Empty<int>());
+                        _chnkOffsetToCellMap[rowPos + cellOffset] = cell;
+                        cellOffset += 8;
                         break;
                     default:
                         throw new InvalidDataException($"Unknown column type code: 0x{colCode:X}");
@@ -165,42 +175,20 @@ public unsafe class Sheet
         }
     }
 
-    private void SetCellString(ref Cell cell, string str)
-    {
-        if (string.IsNullOrEmpty(str))
-        {
-            StringMap.Remove(cell);
-        }
-        else
-        {
-            StringMap[cell] = str;
-        }
-    }
-
-    public string? GetCellString(ref Cell cell)
-    {
-        StringMap.TryGetValue(cell, out var str);
-        return str;
-    }
-
     public string Name { get; }
 
     /// <summary>
     /// Dictionary of cells. Can be assumed to be in sequential order.
     /// </summary>
     public Dictionary<Cell, long> Cells { get; } = [];
-
-    /// <summary>
-    /// String map, with the key being a cell's position relative to the start of row data.
-    /// </summary>
-    public Dictionary<Cell, string> StringMap { get; } = [];
-
+    
     /// <summary>
     /// Writes sheet data to stream.
     /// </summary>
     /// <param name="bw"><see cref="BinaryWriter"/> to use.</param>
+    /// <param name="chnk">Chnk instance.</param>
     /// <returns>Position to start of row data (needed for writing string map).</returns>
-    public int Write(BinaryWriter bw)
+    public void Write(BinaryWriter bw, Chnk chnk)
     {
         var stream = bw.BaseStream;
         stream.AlignStream(8);
@@ -211,15 +199,17 @@ public unsafe class Sheet
         fixed (ColumnType* ptr = ColCodes)
             stream.Write(new(ptr, sizeof(ColumnType) * ColCodes.Length));
 
+        // Cells are sequential, last cell row idx is the same as the total rows.
+        var numRows = GetNumRows();
         bw.Write(_rowSize);
-        bw.Write(_numRows);
+        bw.Write(numRows);
 
-        var rowsPos = stream.Position;
-        for (var rowIdx = 0; rowIdx < _numRows; rowIdx++)
+        for (var rowIdx = 0; rowIdx < numRows; rowIdx++)
         {
             stream.AlignStream(8);
+            var rowPos = stream.Position;
+            var cellOffset = 0;
             var rowBuffer = GC.AllocateUninitializedArray<byte>(_rowSize);
-            var rowCellOffset = 0;
 
             int currBools = 0;
             byte currBitOffset = 0;
@@ -236,9 +226,9 @@ public unsafe class Sheet
                     case ColumnType.Bool:
                         if (currBitOffset == 0)
                         {
-                            Utils.Align(ref rowCellOffset, 4);
-                            boolWritePos = rowCellOffset;
-                            rowCellOffset += 4;
+                            Utils.Align(ref cellOffset, 4);
+                            boolWritePos = cellOffset;
+                            cellOffset += 4;
                             currBools = 0;
                         }
 
@@ -258,34 +248,38 @@ public unsafe class Sheet
                         break;
 
                     case ColumnType.Byte:
-                        rowBuffer[rowCellOffset++] = (byte)cellValue;
+                        rowBuffer[cellOffset++] = (byte)cellValue;
                         break;
 
                     case ColumnType.Short:
-                        Utils.Align(ref rowCellOffset, 2);
-                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), (short)cellValue);
-                        rowCellOffset += 2;
+                        Utils.Align(ref cellOffset, 2);
+                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(cellOffset), (short)cellValue);
+                        cellOffset += 2;
                         break;
 
                     case ColumnType.Int:
-                        Utils.Align(ref rowCellOffset, 4);
-                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), (int)cellValue);
-                        rowCellOffset += 4;
+                        Utils.Align(ref cellOffset, 4);
+                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(cellOffset), (int)cellValue);
+                        cellOffset += 4;
                         break;
                     case ColumnType.Float:
-                        Utils.Align(ref rowCellOffset, 4);
+                        Utils.Align(ref cellOffset, 4);
                         var fValue = (float)Math.Round(Unsafe.BitCast<int, float>((int)cellValue), 3);
-                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), fValue);
-                        rowCellOffset += 4;
+                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(cellOffset), fValue);
+                        cellOffset += 4;
                         break;
 
                     case ColumnType.String:
                     case ColumnType.String2:
                     case ColumnType.String3:
-                        Utils.Align(ref rowCellOffset, 8);
-                        // Presumably you’ll actually look up and write the string pointer or ID here.
-                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowCellOffset), 0L);
-                        rowCellOffset += 8;
+                    case ColumnType.IntArray:
+                        Utils.Align(ref cellOffset, 8);
+                        BitConverter.TryWriteBytes(rowBuffer.AsSpan(cellOffset), 0L);
+
+                        if (_cellsChnkValues.TryGetValue(cell, out var chnkValue))
+                            chnk.SetChnkItem((int)(rowPos + cellOffset), chnkValue);
+                        
+                        cellOffset += 8;
                         break;
 
                     default:
@@ -299,14 +293,12 @@ public unsafe class Sheet
 
             stream.Write(rowBuffer);
         }
-
-        return (int)rowsPos;
     }
     
     public void MergeDiff(SheetDiff diff)
     {
-        foreach (var cell in diff.Cells) Cells[cell.Key] = cell.Value;
-        foreach (var str in diff.Strings) StringMap[str.Key] = str.Value;
+        foreach (var kvp in diff.Cells) Cells[kvp.Key] = kvp.Value;
+        foreach (var kvp in diff.ChnkCells) _cellsChnkValues[kvp.Key] = kvp.Value;
     }
 
     /// <summary>
@@ -315,9 +307,9 @@ public unsafe class Sheet
     /// <param name="csvContent">CSV row string.</param>
     public void AppendCsv(string csvContent)
     {
-        var csv = Csv.Reader(x => CsvConfig).FromText(csvContent);
+        var csv = CsvReader.FromText(csvContent);
 
-        var rowIdx = _numRows;
+        var rowIdx = GetNumRows();
         foreach (var row in csv)
         {
             for (var colIdx = 0; colIdx < row.ColCount; colIdx++)
@@ -329,17 +321,15 @@ public unsafe class Sheet
                 var cellValue = GetCellValue(colType, cellValueStr);
                 Cells[cell] = cellValue;
 
-                if (IsColumnString(colType))
-                    SetCellString(ref cell, cellValueStr);
+                if (IsColumnChnk(colType))
+                    _cellsChnkValues[cell] = GetChnkValue(colType, cellValueStr);
             }
 
             rowIdx++;
         }
-
-        _numRows++;
     }
 
-    public record SheetDiff(IReadOnlyDictionary<Cell, long> Cells, IReadOnlyDictionary<Cell, string> Strings);
+    public record SheetDiff(IReadOnlyDictionary<Cell, long> Cells, IReadOnlyDictionary<Cell, object> ChnkCells);
     
     /// <summary>
     /// Generates a diff of cells and strings compared to <paramref name="other"/>.<br/>
@@ -349,7 +339,7 @@ public unsafe class Sheet
     public SheetDiff GenerateDiff(Sheet other)
     {
         var diffCells = other.Cells.Where(x => IsCellDiff(x.Key, x.Value)).ToDictionary();
-        var diffStrings = other.StringMap.Where(x => IsStringDiff(x.Key, x.Value)).ToDictionary();
+        var diffStrings = other._cellsChnkValues.Where(x => IsCellChnkDiff(x.Key, x.Value)).ToDictionary();
         return new(diffCells, diffStrings);
     }
 
@@ -359,28 +349,54 @@ public unsafe class Sheet
         return cellValue != value;
     }
 
-    private bool IsStringDiff(Cell otherCell, string otherStr)
+    private bool IsCellChnkDiff(Cell otherCell, object otherValue)
     {
-        if (!StringMap.TryGetValue(otherCell, out var currStr)) return true;
-        if (string.IsNullOrEmpty(currStr) && string.IsNullOrEmpty(otherStr)) return false;
-        return currStr != otherStr;
+        if (!_cellsChnkValues.TryGetValue(otherCell, out var currValue)) return true;
+        
+        if (currValue is int[] currInts)
+        {
+            return currInts.SequenceEqual((int[])otherValue);
+        }
+        
+        return !currValue.Equals(otherValue);
     }
 
     /// <summary>
-    /// Applies an MBE's string map to any string cells.
+    /// Applies an MBE's Chnk to Cell values.
     /// </summary>
-    /// <param name="offsetToStringMap">MBE string map, which uses absolute cell positions (offset from beginning of file) for keys.</param>
-    public void ApplyMbeStringMap(Dictionary<long, string> offsetToStringMap)
+    /// <param name="chnk">MBE Chnk section.</param>
+    public void ApplyMbeChnk(Chnk chnk)
     {
-        foreach (var kvp in offsetToStringMap)
+        foreach (var kvp in _chnkOffsetToCellMap)
         {
-            var cell = GetCellByOffset(kvp.Key);
-            SetCellString(ref cell, kvp.Value);
+            if (chnk.TryGetChnkItem((int)kvp.Key, out var chnkValue))
+            {
+                _cellsChnkValues[kvp.Value] = chnkValue;
+            }
         }
     }
 
-    private static bool IsColumnString(ColumnType type) =>
-        type is ColumnType.String or ColumnType.String2 or ColumnType.String3;
+    private static bool IsColumnChnk(ColumnType type) =>
+        type is ColumnType.String or ColumnType.String2 or ColumnType.String3 or ColumnType.IntArray;
+
+    private static object GetChnkValue(ColumnType type, string chnkValueStr)
+    {
+        if (type == ColumnType.IntArray)
+        {
+            return chnkValueStr
+                .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(int.Parse)
+                .ToArray();
+        }
+
+        return chnkValueStr;
+    }
+
+    public bool TryGetCellChnkValue(Cell cell, [NotNullWhen(true)] out object? value)
+    {
+        _cellsChnkValues.TryGetValue(cell, out value);
+        return value != null;
+    }
 
     private static long GetCellValue(ColumnType type, string valueStr) =>
         type switch
@@ -433,8 +449,43 @@ public unsafe class Sheet
     private Cell GetCellByOffset(long offset)
     {
         var rowIdx = (offset - _basePos) / _rowSize;
-        var colIdx = (offset - _basePos) % _rowSize;
+        var colIdx = GetColByRowOffset((offset - _basePos) % _rowSize);
         return new((int)rowIdx, (int)colIdx);
+    }
+
+    private int GetColByRowOffset(long targetRowOffset)
+    {
+        var cellRowOfs = 0;
+        var currBitOffset = 0;
+        for (var i = 0; i < ColCodes.Length; i++)
+        {
+            var colType = ColCodes[i];
+            if (colType == ColumnType.Empty) continue;
+            
+            if (colType == ColumnType.Bool)
+            {
+                if (currBitOffset == 0)
+                {
+                    Utils.Align(ref cellRowOfs, 4);
+                    cellRowOfs += 4;
+                }
+                
+                currBitOffset++;
+                if (currBitOffset >= 32) currBitOffset = 0;
+
+                if (cellRowOfs == targetRowOffset) return i;
+            }
+            else
+            {
+                var colSize = ColumnSizes[colType];
+                Utils.Align(ref cellRowOfs, colSize);
+
+                if (cellRowOfs == targetRowOffset) return i;
+                cellRowOfs += colSize;
+            }
+        }
+
+        return ColCodes.Length - 1;
     }
 
     /// <summary>
@@ -474,4 +525,6 @@ public unsafe class Sheet
     
         return Utils.Align8(rowSize);
     }
+
+    private int GetNumRows() => Cells.Last().Key.Row + 1;
 }

@@ -2,6 +2,7 @@ namespace MVLibraryNET.MBE;
 
 public enum ColumnType
 {
+    IntArray = 0x0,
     Int      = 0x2,
     Short    = 0x3,
     Byte     = 0x4,
