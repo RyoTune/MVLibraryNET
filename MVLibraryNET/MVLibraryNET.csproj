@@ -9,7 +9,7 @@
         <Authors>RyoTune</Authors>
         <Description>.NET library for working with Media.Vision files.</Description>
         <Copyright>MIT</Copyright>
-        <Version>1.2.1</Version>
+        <Version>1.2.2</Version>
     </PropertyGroup>
 
     <ItemGroup>

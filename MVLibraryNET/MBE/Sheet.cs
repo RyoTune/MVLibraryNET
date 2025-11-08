@@ -526,5 +526,5 @@ public unsafe class Sheet
         return Utils.Align8(rowSize);
     }
 
-    private int GetNumRows() => Cells.LastOrDefault().Key.Row + 1;
+    private int GetNumRows() => Cells.Count > 0 ? Cells.Last().Key.Row + 1 : 0;
 }
