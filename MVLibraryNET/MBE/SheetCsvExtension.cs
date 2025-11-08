@@ -1,74 +1,60 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Text;
+using nietras.SeparatedValues;
 
 namespace MVLibraryNET.MBE;
 
 public static class SheetCsvExtension
 {
+    private static readonly SepWriterOptions CsvWriter = Sep.Writer(_ => new() { Escape =  true, Sep = new(',')});
+    
     public static string ToCsv(this Sheet sheet)
     {
-        var sb = new StringBuilder();
+        using var writer = CsvWriter.ToText();
+        var header = sheet.ColCodes.Select((x, idx) => $"{x} {idx + 1}").ToArray();
 
-        for (var i = 0; i < sheet.ColCodes.Length; i++)
-        {
-            var col = sheet.ColCodes[i];
-            sb.Append($"{col} {i + 1}");
-
-            // Don't append comma after last column.
-            if (i == sheet.ColCodes.Length - 1) break;
-            sb.Append(',');
-        }
-
-        sb.AppendLine();
-        
-        var currRow = 0;
+        var row = writer.NewRow();
+        var rowIdx = 0;
         foreach (var kvp in sheet.Cells)
         {
             var cell = kvp.Key;
             var value = kvp.Value;
             
-            // Cells can be assumed to be in sequential order.
-            // Add new line when row changes.
-            if (cell.Row != currRow)
+            // Entered new row.
+            if (cell.Row != rowIdx)
             {
-                sb.AppendLine();
-                currRow = kvp.Key.Row;
+                row.Dispose();
+                row = writer.NewRow();
+                rowIdx = cell.Row;
             }
             
             var colCode = sheet.ColCodes[cell.Column];
             switch (colCode)
             {
                 case ColumnType.Bool:
-                    sb.Append(value == 0 ? "false" : "true");
+                    row[header[cell.Column]].Set(value == 0 ? "false" : "true");
                     break;
                 case ColumnType.Int:
                 case ColumnType.Short:
                 case ColumnType.Byte:
-                    sb.Append(value);
+                    row[header[cell.Column]].Set(value.ToString());
                     break;
                 case ColumnType.Float:
                     var fValue = (float)Math.Round(Unsafe.BitCast<int, float>((int)value), 3);
-                    sb.Append(fValue);
+                    row[header[cell.Column]].Set(fValue.ToString(CultureInfo.InvariantCulture));
                     break;
                 case ColumnType.String:
                 case ColumnType.String2:
                 case ColumnType.String3:
                 case ColumnType.Empty:
-                    var strValue = $"\"{sheet.GetCellString(ref cell) ?? string.Empty}\"";
-                    sb.Append(strValue);
+                    row[header[cell.Column]].Set(sheet.GetCellString(cell) ?? string.Empty);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
-            // Don't append comma after last column.
-            if (cell.Column != sheet.ColCodes.Length - 1)
-            {
-                sb.Append(',');
-            }
         }
 
-        sb.AppendLine();
-        return sb.ToString();
+        row.Dispose();
+        return writer.ToString();
     }
 }
