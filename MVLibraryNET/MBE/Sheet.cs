@@ -193,7 +193,7 @@ public unsafe class Sheet
         var stream = bw.BaseStream;
         stream.AlignStream(8);
 
-        bw.WritePaddedStringIncludingLength(Name);
+        bw.WriteStringIncludingLength(Name);
 
         bw.Write(ColCodes.Length);
         fixed (ColumnType* ptr = ColCodes)
@@ -398,18 +398,23 @@ public unsafe class Sheet
         return value != null;
     }
 
-    private static long GetCellValue(ColumnType type, string valueStr) =>
-        type switch
+    private static long GetCellValue(ColumnType type, string valueStr)
+    {
+        var valOrZero = ValueOrZero(valueStr);
+        return type switch
         {
-            ColumnType.Int => int.Parse(valueStr),
-            ColumnType.Short => short.Parse(valueStr),
-            ColumnType.Byte => sbyte.Parse(valueStr),
-            ColumnType.Float => Unsafe.BitCast<float, int>((float)Math.Round(float.Parse(valueStr), 3)),
+            ColumnType.Int => int.Parse(valOrZero),
+            ColumnType.Short => short.Parse(valOrZero),
+            ColumnType.Byte => sbyte.Parse(valOrZero),
+            ColumnType.Float => Unsafe.BitCast<float, int>((float)Math.Round(float.Parse(valOrZero), 3)),
             ColumnType.String3 or ColumnType.String or ColumnType.String2 => 0,
-            ColumnType.Bool => char.IsDigit(valueStr.First()) ? valueStr == "1" ? 1 : 0 : bool.Parse(valueStr) ? 1 : 0,
+            ColumnType.Bool => char.IsDigit(valOrZero.First()) ? valOrZero == "1" ? 1 : 0 : bool.Parse(valueStr) ? 1 : 0,
             ColumnType.Empty => 0,
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
+    }
+
+    private static string ValueOrZero(string value) => string.IsNullOrEmpty(value) ? "0" : value;
 
     private int GetCellRowOffset(ref Cell cell)
     {
