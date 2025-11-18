@@ -22,12 +22,13 @@ public class Mbe
         var numSheets = br.ReadInt32();
         for (int i = 0; i < numSheets; i++)
         {
+            stream.Align(4);
             var sheet = new Sheet(br, chnk);
             Sheets[sheet.Name] = sheet;
         }
         
         // Build string maps.
-        br.BaseStream.AlignStream(8);
+        stream.Align(8);
         if (br.ReadInt32() == Chnk.Magic) chnk.Read(br);
         
         // Fix up string cells.
@@ -46,10 +47,11 @@ public class Mbe
 
         foreach (var sheet in Sheets.Values)
         {
+            stream.Align(8);
             sheet.Write(bw, chnk);
         }
-
-        bw.BaseStream.AlignStream(8);
+        
+        stream.Align(8);
         chnk.Write(bw);
     }
 }

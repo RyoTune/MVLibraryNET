@@ -35,7 +35,7 @@ public static class Utils
         bw.Write(bytes);
     }
 
-    public static void AlignStream(this Stream stream, byte alignment) =>
+    public static void Align(this Stream stream, byte alignment) =>
         stream.Position = alignment switch
         {
             8 => Align8((int)stream.Position),
@@ -44,34 +44,11 @@ public static class Utils
             _ => throw new InvalidOperationException()
         };
 
-    public static void Align(ref int offset, byte alignment)
-    {
-        switch (alignment)
-        {
-            case 16: offset = Align16(offset); break;
-            case 8: offset = Align8(offset); break;
-            case 4: offset = Align4(offset); break;
-            case 2: offset = Align2(offset); break;
-            default: return;
-        }
-    }
+    private static int Align8(int offset) => (offset + 7) & ~7;
+
+    private static int Align4(int offset) => (offset + 3) & ~3;
+
+    private static int Align2(int offset) => (offset + 1) & ~1;
     
-    public static int Align16(int offset) => (offset + 15) & ~15;
-    
-    public static int Align8(int offset) => (offset + 7) & ~7;
-    
-    public static int Align4(int offset) => (offset + 3) & ~3;
-    
-    public static int Align2(int offset) => (offset + 1) & ~1;
-    
-    public static string TrimOneQuote(string s)
-    {
-        if (s.Length >= 2 && s[0] == '"' && s[^1] == '"')
-            return s.Substring(1, s.Length - 2);
-        if (s.Length > 0 && s[0] == '"')
-            return s[1..];
-        if (s.Length > 0 && s[^1] == '"')
-            return s[..^1];
-        return s;
-    }
+    public static int CeilInteger(int value, int step) => step == 0 ? value : (value + step - 1) / step * step;
 }

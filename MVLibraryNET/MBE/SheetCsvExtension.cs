@@ -11,7 +11,7 @@ public static class SheetCsvExtension
     public static string ToCsv(this Sheet sheet)
     {
         using var writer = CsvWriter.ToText();
-        var header = sheet.ColCodes.Select((x, idx) => $"{x} {idx + 1}").ToArray();
+        var header = sheet.Entries.Select((x, idx) => $"{x} {idx + 1}").ToArray();
 
         var row = writer.NewRow();
         var rowIdx = 0;
@@ -28,26 +28,26 @@ public static class SheetCsvExtension
                 rowIdx = cell.Row;
             }
             
-            var colCode = sheet.ColCodes[cell.Column];
+            var colCode = sheet.Entries[cell.Column];
             switch (colCode)
             {
-                case ColumnType.Bool:
+                case EntryType.Bool:
                     row[header[cell.Column]].Set(value == 0 ? "false" : "true");
                     break;
-                case ColumnType.Int:
-                case ColumnType.Short:
-                case ColumnType.Byte:
+                case EntryType.Int:
+                case EntryType.Short:
+                case EntryType.Byte:
                     row[header[cell.Column]].Set(value.ToString());
                     break;
-                case ColumnType.Float:
+                case EntryType.Float:
                     var fValue = (float)Math.Round(Unsafe.BitCast<int, float>((int)value), 3);
                     row[header[cell.Column]].Set(fValue.ToString(CultureInfo.InvariantCulture));
                     break;
-                case ColumnType.String:
-                case ColumnType.String2:
-                case ColumnType.String3:
-                case ColumnType.Empty:
-                case ColumnType.IntArray:
+                case EntryType.String:
+                case EntryType.String2:
+                case EntryType.String3:
+                case EntryType.Empty:
+                case EntryType.IntArray:
                     if (sheet.TryGetCellChnkValue(cell, out var chnkValue))
                     {
                         row[header[cell.Column]].Set(GetChnkValueStr(chnkValue));
