@@ -39,7 +39,7 @@ public class Mbe
 
     public void Write(Stream stream)
     {
-        using var bw = new BinaryWriter(stream);
+        var bw = new BinaryWriter(stream);
         var chnk = new Chnk();
         
         bw.Write(Expa);

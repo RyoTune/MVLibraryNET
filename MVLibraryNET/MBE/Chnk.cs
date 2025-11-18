@@ -40,13 +40,13 @@ public class Chnk
     /// </summary>
     public void Write(BinaryWriter bw)
     {
+        bw.Write(Magic);
         if (_items.Count <= 0)
         {
             bw.Write(0);
             return;
         }
         
-        bw.Write(Magic);
         bw.Write(_items.Count);
         foreach (var kvp in _items)
         {
