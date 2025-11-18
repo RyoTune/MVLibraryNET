@@ -23,9 +23,8 @@ public class Chnk
             var offset = br.ReadInt32();
             if (!_items.TryGetValue(offset, out var initValue)) continue;
             
-            if (initValue.GetType() == typeof(int[]))
+            if (initValue is int[] ints)
             {
-                var ints = GC.AllocateUninitializedArray<int>(br.ReadInt32());
                 fixed (int* ptr = ints) br.BaseStream.ReadExactly(new(ptr, ints.Length * sizeof(int)));
                 _items[offset] = ints;
             }

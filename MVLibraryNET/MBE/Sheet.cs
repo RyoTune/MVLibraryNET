@@ -155,6 +155,9 @@ public unsafe class Sheet
                         _chnkOffsetToCellMap[rowPos + rowOfs] = cell;
                         break;
                     case EntryType.IntArray:
+                        var numInts = BitConverter.ToInt32(rowBuffer, rowOfs);
+                        chnk.SetChnkItem((int)(rowPos + rowOfs), new int[numInts]);
+                        _chnkOffsetToCellMap[rowPos + rowOfs] = cell;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException($"Unknown entry type '{type:X}' for entry '{entryIdx}' in row '{rowIdx}'. Sheet: {Name}");
@@ -252,10 +255,15 @@ public unsafe class Sheet
                     case EntryType.String:
                     case EntryType.String2:
                         BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowOfs), 0L);
-                        if (_cellsChnkValues.TryGetValue(cell, out var chnkValue))
-                            chnk.SetChnkItem((int)(rowPos + rowOfs), chnkValue);
+                        if (_cellsChnkValues.TryGetValue(cell, out var strChnk))
+                            chnk.SetChnkItem((int)(rowPos + rowOfs), strChnk);
                         break;
                     case EntryType.IntArray:
+                        if (_cellsChnkValues.TryGetValue(cell, out var intsChnk) && intsChnk is int[] ints)
+                        {
+                            BitConverter.TryWriteBytes(rowBuffer.AsSpan(rowOfs), ints.Length);
+                            chnk.SetChnkItem((int)(rowPos + rowOfs), intsChnk);
+                        }
                         break;
                     default:
                         throw new ArgumentOutOfRangeException($"Unknown entry type '{type:X}' for entry '{entryIdx}' in row '{rowIdx}'. Sheet: {Name}");
