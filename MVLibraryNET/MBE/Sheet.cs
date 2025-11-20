@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using nietras.SeparatedValues;
@@ -387,10 +388,10 @@ public unsafe class Sheet
         var valueOrZero = ValueOrZero(valueStr);
         return type switch
         {
-            EntryType.Int => int.Parse(valueOrZero),
-            EntryType.Short => short.Parse(valueOrZero),
-            EntryType.Byte => sbyte.Parse(valueOrZero),
-            EntryType.Float => Unsafe.BitCast<float, int>((float)Math.Round(float.Parse(valueOrZero), 3)),
+            EntryType.Int => int.Parse(valueOrZero, CultureInfo.InvariantCulture),
+            EntryType.Short => short.Parse(valueOrZero, CultureInfo.InvariantCulture),
+            EntryType.Byte => sbyte.Parse(valueOrZero, CultureInfo.InvariantCulture),
+            EntryType.Float => Unsafe.BitCast<float, int>((float)Math.Round(float.Parse(valueOrZero, CultureInfo.InvariantCulture), 3)),
             EntryType.String3 or EntryType.String or EntryType.String2 => 0,
             EntryType.Bool => char.IsDigit(valueOrZero.First()) ? valueOrZero == "1" ? 1 : 0 : bool.Parse(valueStr) ? 1 : 0,
             EntryType.Empty => 0,
