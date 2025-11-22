@@ -27,6 +27,8 @@ public static class Utils
     
     public static void WritePaddedStringIncludingLength(this BinaryWriter bw, string str)
     {
+        str = str.ReplaceLineEndings("\n");
+        
         var bytes = Encoding.UTF8.GetBytes(str);
         var alignedLen = Align4(bytes.Length + 2);
         Array.Resize(ref bytes, alignedLen);
