@@ -48,19 +48,37 @@ public class Chnk
         }
         
         bw.Write(_items.Count);
+        var numItemsPos = bw.BaseStream.Position - sizeof(int);
+        var numItemsAct = 0;
         foreach (var kvp in _items)
         {
-            bw.Write(kvp.Key);
-
             if (kvp.Value is string str)
             {
+                if (string.IsNullOrEmpty(str)) continue;
+                
+                bw.Write(kvp.Key);
                 bw.WritePaddedStringIncludingLength(str);
             }
             else if (kvp.Value is int[] ints)
             {
+                bw.Write(kvp.Key);
                 bw.Write(ints.Length);
                 foreach (var i in ints) bw.Write(i);
             }
+            else
+            {
+                throw new($"Unknown Chnk item type: {kvp.Value.GetType()}");
+            }
+            
+            numItemsAct++;
         }
+
+        var currPos = bw.BaseStream.Position;
+        
+        // Write actual amount of items written.
+        bw.BaseStream.Position = numItemsPos;
+        bw.Write(numItemsAct);
+
+        bw.BaseStream.Position = currPos;
     }
 }
