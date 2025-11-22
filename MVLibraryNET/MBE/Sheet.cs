@@ -234,7 +234,7 @@ public unsafe class Sheet
                 {
                     case EntryType.Unk1:
                     case EntryType.Empty:
-                        continue;
+                        break;
                     case EntryType.Bool:
                         if (bitCounter == 0) currentBits = 0;
                         if (cellValue == 1) currentBits |= 1u << bitCounter;
